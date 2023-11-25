@@ -1,32 +1,36 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.db.models import UniqueConstraint
 
-# Create your models here.
 
 class User(AbstractUser):
     email = models.EmailField(
+        'Электронная почта',
         max_length=254,
         unique=True,
-        null=False,
-        blank=False,
-        verbose_name='Электронная почта'
     )
     username = models.CharField(
+        'Имя пользователя',
         max_length=150,
         unique=True,
         null=False,
-        verbose_name='Имя пользователя'
     )
     first_name = models.CharField(
+        'Имя',
         max_length=150,
         blank=True,
-        verbose_name='Имя',
     )
     last_name = models.CharField(
+        'Фамилия',
         max_length=150,
         blank=True,
-        verbose_name='Фамилия'
     )
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
         return self.username if self.username else self.email
@@ -35,19 +39,25 @@ class User(AbstractUser):
 class Subscription(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
         related_name='subscribers',
+        on_delete=models.CASCADE,
         verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
         related_name='subscription_author',
+        on_delete=models.CASCADE,
         verbose_name='Автор'
     )
 
     class Meta:
-        unique_together = ['user', 'author']
+        constraints = [
+            UniqueConstraint(
+                fields=['user', 'author'],
+                name='unique_subscription')
+        ]
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
 
     def __str__(self):
         return f'{self.user} подписан на {self.author}'
