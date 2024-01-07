@@ -1,10 +1,9 @@
-from rest_framework import generics, viewsets, permissions
+from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.decorators import permission_classes, action
+from rest_framework.decorators import action
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 
 from users.models import User
 from api.serializers import (
