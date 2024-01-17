@@ -1,9 +1,7 @@
 from rest_framework import serializers
-from rest_framework.fields import IntegerField
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer, UserCreateSerializer
 from rest_framework.exceptions import ValidationError
-
 from drf_extra_fields.fields import Base64ImageField
 
 from users.models import User
@@ -13,28 +11,38 @@ from recipes.models import (
     Recipe,
     ShoppingList,
     Favorite,
-    RecipeIngredient
+    RecipeIngredient,
 )
 
 
-#Users
 class CustomUserSerializer(UserSerializer):
-    class Meta(UserSerializer.Meta):
-        model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name')
-
-
-class CustomUserCreateSerializer(UserCreateSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
-    class Meta(UserCreateSerializer.Meta):
+    class Meta(UserSerializer.Meta):
         model = User
         fields = ('id', 'email', 'username',
-                  'first_name', 'last_name', 'password', 'is_subscribed')
+                  'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
         request_user = self.context['request'].user
-        return request_user.subscribers.filter(id=obj.id).exists()
+        if request_user.is_authenticated:
+            return obj != request_user and request_user.subscribers.filter(id=obj.id).exists()
+        return False
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            data.pop('is_subscribed', None)
+
+        return data
+
+
+class CustomUserCreateSerializer(UserCreateSerializer):
+    class Meta(UserCreateSerializer.Meta):
+        model = User
+        fields = ('id', 'email', 'username',
+                  'first_name', 'last_name', 'password')
 
 
 class CustomSetPasswordSerializer(serializers.Serializer):
@@ -42,7 +50,6 @@ class CustomSetPasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)
 
 
-#Recipes
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
@@ -70,7 +77,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author = CustomUserSerializer(read_only=True, default=serializers.CurrentUserDefault())
     ingredients = RecipeIngredientSerializer(many=True, read_only=True, source='recipe_ingredients')
-    is_favorited = serializers.SerializerMethodField()
+    # is_favorited = serializers.SerializerMethodField()
     is_in_shopping_list = serializers.SerializerMethodField()
 
     class Meta:
@@ -80,14 +87,26 @@ class RecipeListSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context['request'].user
         if user.is_authenticated:
-            return Favorite.objects.filter(user=user, recipe=obj).exists()
+            return Favorite.objects.filter(
+                user=user, recipe=obj).exists()
         return False
 
     def get_is_in_shopping_list(self, obj):
         user = self.context['request'].user
         if user.is_authenticated:
-            return ShoppingList.objects.filter(user=user, recipe=obj).exists()
+            return ShoppingList.objects.filter(
+                user=user, recipe=obj).exists()
         return False
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        user = self.context['request'].user
+        if user.is_authenticated:
+            data['is_favorited'] = Favorite.objects.filter(
+                user=user, recipe=instance).exists()
+        else:
+            data.pop('is_favorited', None)
+        return data
 
 
 class QuantitySerializer(serializers.ModelSerializer):
@@ -170,10 +189,12 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return RecipeListSerializer(instance, context=self.context).data
 
+
 class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
+
 
 class FavoriteSerializer(serializers.ModelSerializer):
     recipe = RecipeSerializer()
@@ -211,3 +232,72 @@ class DownloadShoppingCartSerializer(serializers.Serializer):
     ingredient_name = serializers.CharField()
     total_quantity = serializers.IntegerField()
     measurement_unit = serializers.CharField()
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        print(f"Current user: {request.user}")
+        if request and request.user.is_authenticated:
+            subscribed = obj.subscribers.filter(user=request.user).exists()
+            print(f"Is subscribed: {subscribed}")
+            return subscribed
+        return False
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        limit = request.GET.get('recipes_limit')
+        recipes = obj.recipes.all()
+        if limit:
+            recipes = recipes[:int(limit)]
+        serializer = RecipeSerializer(recipes, many=True, read_only=True)
+        return serializer.data
+
+
+class SubscriptionActionSerializer(serializers.ModelSerializer):
+    email = serializers.ReadOnlyField()
+    username = serializers.ReadOnlyField()
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeSerializer(many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed', 'recipes', 'recipes_count')
+
+    def validate(self, obj):
+        request = self.context.get('request')
+        if request and (request.user == obj):
+            raise serializers.ValidationError({'errors': 'Ошибка подписки.'})
+        return obj
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        return (
+            request and request.user.is_authenticated
+            and obj.subscribers.filter(user=request.user).exists()
+        )
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+
+class FavoriteListSerializer(serializers.ModelSerializer):
+    recipe = RecipeSerializer()
+
+    class Meta:
+        model = Favorite
+        fields = ('recipe',)
