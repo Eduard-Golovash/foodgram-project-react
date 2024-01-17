@@ -3,13 +3,16 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.contrib.auth import update_session_auth_hash
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 
-from users.models import User
+from users.models import User, Subscription
 from api.serializers import (
     CustomUserSerializer,
     CustomUserCreateSerializer,
-    CustomSetPasswordSerializer
+    CustomSetPasswordSerializer,
+    SubscriptionSerializer,
+    SubscriptionActionSerializer
 )
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -23,7 +26,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return CustomUserCreateSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -31,7 +34,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=(IsAuthenticated,))
     def me(self, request):
-        serializer = CustomUserSerializer(request.user)
+        serializer = CustomUserSerializer(request.user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], permission_classes=(IsAuthenticated,))
@@ -47,3 +50,38 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         user.save()
         update_session_auth_hash(request, user)
         return Response({'detail': 'Пароль успешно обновлен'}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'],
+            permission_classes=(IsAuthenticated,),)
+            # pagination_class=CustomPaginator)
+    def subscriptions(self, request):
+        queryset = User.objects.filter(subscription_author__user=request.user)
+        page = self.paginate_queryset(queryset)
+        serializer = SubscriptionSerializer(page, many=True,
+                                             context={'request': request})
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=True, methods=['post'],
+            permission_classes=(IsAuthenticated,))
+    def subscribe(self, request, **kwargs):
+        author = get_object_or_404(User, id=kwargs['pk'])
+        if request.user == author:
+            return Response({'error': 'Вы не можете подписаться на себя'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        subscription, created = Subscription.objects.get_or_create(user=request.user, author=author)
+        if not created:
+            return Response({'error': 'Вы уже подписаны на этого пользователя'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer = SubscriptionActionSerializer(author, context={'request': request})
+        data = serializer.data
+        data['is_subscribed'] = True
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['delete'], permission_classes=(IsAuthenticated,))
+    def unsubscribe(self, request, **kwargs):
+        author = get_object_or_404(User, id=kwargs['pk'])
+        subscription = get_object_or_404(Subscription, user=request.user, author=author)
+        subscription.delete()
+
+        return Response({'detail': 'Успешная отписка'},
+                        status=status.HTTP_204_NO_CONTENT)

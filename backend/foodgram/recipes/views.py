@@ -6,8 +6,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import (
     IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-    SAFE_METHODS
+    IsAuthenticatedOrReadOnly
 )
 from reportlab.pdfgen import canvas
 
@@ -25,8 +24,11 @@ from api.serializers import (
     RecipeListSerializer,
     RecipeCreateUpdateSerializer,
     RecipeIngredient,
-    DownloadShoppingCartSerializer
+    DownloadShoppingCartSerializer,
+    FavoriteListSerializer
 )
+from recipes.paginations import CustomPaginator
+from api.permissions import IsAuthorOrReadOnly
 
 
 class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -46,7 +48,8 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     # filterset_class =
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
+    pagination_class = CustomPaginator
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -105,7 +108,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, **kwargs):
         recipe = self.get_object()
-
         if request.method == 'POST':
             serializer = RecipeSerializer(recipe, context={'request': request})
             if not Favorite.objects.filter(user=request.user, recipe=recipe).exists():
@@ -113,7 +115,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response({'errors': 'Рецепт уже есть в избранном'},
                             status=status.HTTP_400_BAD_REQUEST)
-
         if request.method == 'DELETE':
             get_object_or_404(Favorite, user=request.user, recipe=recipe).delete()
             return Response({'detail': 'Рецепт успешно удален из избранного'})
+
+    @action(detail=False, methods=['get'],
+        permission_classes=(IsAuthenticated,))
+    def favorite_list(self, request, **kwargs):
+        favorites = Favorite.objects.filter(user=request.user)
+        serializer = FavoriteListSerializer(favorites, many=True)
+        return Response(serializer.data)
