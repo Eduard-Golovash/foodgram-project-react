@@ -61,27 +61,21 @@ class CustomUserViewSet(viewsets.ModelViewSet):
                                              context={'request': request})
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=['post'],
-            permission_classes=(IsAuthenticated,))
+    @action(detail=True, methods=['post', 'delete'], permission_classes=(IsAuthenticated,))
     def subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
-        if request.user == author:
-            return Response({'error': 'Вы не можете подписаться на себя'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        subscription, created = Subscription.objects.get_or_create(user=request.user, author=author)
-        if not created:
-            return Response({'error': 'Вы уже подписаны на этого пользователя'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if request.method == 'POST':
+            if request.user == author:
+                return Response({'error': 'Вы не можете подписаться на себя'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            subscription, created = Subscription.objects.get_or_create(user=request.user, author=author)
+            if not created:
+                return Response({'error': 'Вы уже подписаны на этого пользователя'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        elif request.method == 'DELETE':
+            subscription = get_object_or_404(Subscription, user=request.user, author=author)
+            subscription.delete()
         serializer = SubscriptionActionSerializer(author, context={'request': request})
         data = serializer.data
-        data['is_subscribed'] = True
-        return Response(data, status=status.HTTP_201_CREATED)
-
-    @action(detail=True, methods=['delete'], permission_classes=(IsAuthenticated,))
-    def unsubscribe(self, request, **kwargs):
-        author = get_object_or_404(User, id=kwargs['pk'])
-        subscription = get_object_or_404(Subscription, user=request.user, author=author)
-        subscription.delete()
-
-        return Response({'detail': 'Успешная отписка'},
-                        status=status.HTTP_204_NO_CONTENT)
+        data['is_subscribed'] = request.method == 'POST'
+        return Response(data, status=status.HTTP_201_CREATED if request.method == 'POST' else status.HTTP_204_NO_CONTENT)
