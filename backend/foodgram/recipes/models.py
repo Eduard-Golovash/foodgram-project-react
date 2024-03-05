@@ -47,6 +47,7 @@ class Ingredient(models.Model):
     def __str__(self):
         return self.name
 
+
 class Recipe(models.Model):
     author = models.ForeignKey(
         User,
@@ -100,7 +101,7 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Ингредиент'
     )
-    quantity = models.IntegerField(
+    amount = models.IntegerField(
         'Количество',
         validators=[MinValueValidator(1)]
     )
