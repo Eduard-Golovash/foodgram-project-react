@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': '/data/db.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
 DATABASES = {
@@ -154,8 +154,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 MEDIA_URL = '/media/'
+
 MEDIA_ROOT = '/app/media/'
+
 STATIC_URL = '/static/django/'
+
 STATIC_ROOT = '/app/static_django/'
 
 
@@ -175,4 +178,18 @@ DJOSER = {
         'user': 'api.serializers.CustomUserSerializer',
         'user_create:': 'api.serializers.CustomUserCreateSerializer',
     }
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
 }
