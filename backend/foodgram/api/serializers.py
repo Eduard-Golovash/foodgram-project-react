@@ -29,8 +29,8 @@ class CustomUserSerializer(UserSerializer):
         request_user = self.context['request'].user
         if request_user.is_authenticated:
             return (
-                obj != request_user and
-                request_user.subscribers.filter(id=obj.id).exists()
+                obj != request_user
+                and request_user.subscribers.filter(id=obj.id).exists()
             )
         return False
 
