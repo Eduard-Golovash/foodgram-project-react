@@ -12,13 +12,6 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-from recipes.models import (
-    Ingredient,
-    Tag,
-    Recipe,
-    ShoppingList,
-    Favorite
-)
 from api.serializers import (
     IngredientSerializer,
     TagSerializer,
@@ -28,8 +21,15 @@ from api.serializers import (
     RecipeIngredient,
     DownloadShoppingCartSerializer
 )
-from recipes.paginations import CustomPaginator
 from api.permissions import IsAuthorOrReadOnly
+from recipes.models import (
+    Ingredient,
+    Tag,
+    Recipe,
+    ShoppingList,
+    Favorite
+)
+from recipes.paginations import CustomPaginator
 
 
 class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):

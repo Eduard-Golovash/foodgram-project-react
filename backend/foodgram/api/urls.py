@@ -2,12 +2,13 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from djoser.views import TokenDestroyView
 
-from users.views import CustomUserViewSet
 from recipes.views import (
     IngredientsViewSet,
     TagsViewSet,
     RecipesViewSet
 )
+from users.views import CustomUserViewSet
+
 
 router = DefaultRouter()
 router.register(r'users', CustomUserViewSet, basename='users')
