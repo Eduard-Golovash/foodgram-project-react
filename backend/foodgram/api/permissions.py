@@ -1,4 +1,5 @@
-from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+
 from recipes.models import Favorite
 from users.models import Subscription
 
@@ -27,6 +28,6 @@ class IsAuthorOrReadOnly(BasePermission):
                 user=request.user, author=obj.author).exists()
         )
         return (
-            is_author or is_favorited_permission or
-            is_subscribed_permission or request.method in SAFE_METHODS
+            is_author or is_favorited_permission
+            or is_subscribed_permission or request.method in SAFE_METHODS
         )
