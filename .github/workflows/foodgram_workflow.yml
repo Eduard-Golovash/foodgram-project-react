@@ -19,6 +19,20 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      backend:
+        image: vashed/foodgram_backend:latest
+        env:
+          POSTGRES_USER: django_user
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: django
+          DB_HOST: postgres
+          DB_PORT: 5432
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      frontend:
+        image: vashed/foodgram_frontend:latest
+        env:
+          BACKEND_HOST: backend
+          BACKEND_PORT: 8000
 
     steps:
     - name: Check out code
