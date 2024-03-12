@@ -1,8 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-from recipes.models import Favorite
-from users.models import Subscription
-
 
 class IsAuthorOrReadOnly(BasePermission):
     def has_permission(self, request, view):
