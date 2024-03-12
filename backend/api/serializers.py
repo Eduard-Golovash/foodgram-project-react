@@ -17,7 +17,7 @@ from recipes.models import (
 from users.models import User
 
 
-class CustomUserSerializer(UserSerializer):
+class UserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
@@ -27,22 +27,14 @@ class CustomUserSerializer(UserSerializer):
 
     def get_is_subscribed(self, obj):
         request_user = self.context['request'].user
-        if request_user.is_authenticated:
-            return (
-                obj != request_user
-                and request_user.subscribers.filter(id=obj.id).exists()
-            )
-        return False
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        user = self.context['request'].user
-        if not user.is_authenticated:
-            data.pop('is_subscribed', None)
-        return data
+        return (
+            request_user.is_authenticated
+            and obj != request_user
+            and request_user.subscribers.filter(id=obj.id).exists()
+        )
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
+class UserCreateSerializer(UserCreateSerializer):
     username = serializers.CharField(
         max_length=150,
         validators=[
@@ -63,7 +55,7 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         return value
 
 
-class CustomSetPasswordSerializer(serializers.Serializer):
+class SetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True)
     current_password = serializers.CharField(required=True)
 
@@ -71,13 +63,13 @@ class CustomSetPasswordSerializer(serializers.Serializer):
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ('id', 'name', 'measurement_unit')
+        fields = '__all__'
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('id', 'name', 'color', 'slug')
+        fields = '__all__'
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
@@ -94,7 +86,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 class RecipeListSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
     tags = TagSerializer(many=True, read_only=True)
-    author = CustomUserSerializer(
+    author = UserSerializer(
         read_only=True, default=serializers.CurrentUserDefault())
     ingredients = RecipeIngredientSerializer(
         many=True, read_only=True, source='recipe_ingredients')
@@ -141,11 +133,11 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ('author',)
 
     def validate(self, data):
-        if self.context['request'].method == 'PATCH':
+        if self.context['request'].method in ['PATCH', 'POST']:
             tags = data.get('tags', [])
             if not tags:
                 raise serializers.ValidationError(
-                    "Поле 'tags' обязательно для обновления рецепта")
+                    "Поле 'tags' обязательно для обновления/создания рецепта")
         if 'ingredients' not in data:
             raise serializers.ValidationError(
                 "Поле 'ingredients' обязательно для обновления рецепта")

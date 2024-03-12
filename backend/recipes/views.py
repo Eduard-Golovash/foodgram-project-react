@@ -29,7 +29,7 @@ from recipes.models import (
     ShoppingList,
     Favorite
 )
-from recipes.paginations import CustomPaginator
+from recipes.paginations import Paginator
 
 
 class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -61,7 +61,7 @@ def get_recipe_object_or_404(**kwargs):
 class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
-    pagination_class = CustomPaginator
+    pagination_class = Paginator
 
     def get_queryset(self):
         is_favorited = self.request.query_params.get('is_favorited', None)

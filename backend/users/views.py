@@ -6,26 +6,26 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from api.serializers import (
-    CustomUserSerializer,
-    CustomUserCreateSerializer,
-    CustomSetPasswordSerializer,
+    UserSerializer,
+    UserCreateSerializer,
+    SetPasswordSerializer,
     SubscriptionSerializer,
     SubscriptionActionSerializer
 )
-from recipes.paginations import CustomPaginator
+from recipes.paginations import Paginator
 from users.models import User, Subscription
 
 
-class CustomUserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = UserSerializer
     permission_classes = [AllowAny]
-    pagination_class = CustomPaginator
+    pagination_class = Paginator
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
-            return CustomUserSerializer
-        return CustomUserCreateSerializer
+            return UserSerializer
+        return UserCreateSerializer
 
     def create(self, request, *args, **kwargs):
         if 'first_name' not in request.data or 'last_name' not in request.data:
@@ -44,14 +44,14 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,))
     def me(self, request):
-        serializer = CustomUserSerializer(request.user,
+        serializer = UserSerializer(request.user,
                                           context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'],
             permission_classes=(IsAuthenticated,))
     def set_password(self, request):
-        serializer = CustomSetPasswordSerializer(data=request.data)
+        serializer = SetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = request.user
         current_password = serializer.validated_data['current_password']
@@ -67,7 +67,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,),
-            pagination_class=CustomPaginator)
+            pagination_class=Paginator)
     def subscriptions(self, request):
         queryset = User.objects.filter(subscription_author__user=request.user)
         page = self.paginate_queryset(queryset)
