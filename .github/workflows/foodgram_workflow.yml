@@ -87,6 +87,8 @@ jobs:
         target: "foodgram-project-react"
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
+      env:
+        SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
