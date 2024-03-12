@@ -79,9 +79,9 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated,))
     def subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
-        if request.user == author:
-            return Response({'error': 'Вы не можете подписаться на себя'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer = SubscriptionActionSerializer(
+            data={'author': author}, context={'request': request})
+        serializer.is_valid(raise_exception=True)
         subscription, created = Subscription.objects.get_or_create(
             user=request.user, author=author)
         if not created:
