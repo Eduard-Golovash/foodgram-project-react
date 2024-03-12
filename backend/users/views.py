@@ -5,6 +5,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
+from api.paginations import Paginator
 from api.serializers import (
     UserSerializer,
     UserCreateSerializer,
@@ -12,7 +13,6 @@ from api.serializers import (
     SubscriptionSerializer,
     SubscriptionActionSerializer
 )
-from recipes.paginations import Paginator
 from users.models import User, Subscription
 
 

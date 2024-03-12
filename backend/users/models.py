@@ -3,26 +3,30 @@ from django.db import models
 from django.db.models import UniqueConstraint
 
 
+MAX_LENGTH_EMAIL = 254
+MAX_LENGTH = 150
+
+
 class User(AbstractUser):
     email = models.EmailField(
         'Электронная почта',
-        max_length=254,
+        max_length=MAX_LENGTH_EMAIL,
         unique=True,
     )
     username = models.CharField(
         'Имя пользователя',
-        max_length=150,
+        max_length=MAX_LENGTH,
         unique=True,
         null=False,
     )
     first_name = models.CharField(
         'Имя',
-        max_length=150,
+        max_length=MAX_LENGTH,
         blank=True,
     )
     last_name = models.CharField(
         'Фамилия',
-        max_length=150,
+        max_length=MAX_LENGTH,
         blank=True,
     )
     USERNAME_FIELD = 'email'

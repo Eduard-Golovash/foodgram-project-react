@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,15 +13,20 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+from api.filters import (
+    IngredientFilter,
+    RecipeFilter
+)
 from api.serializers import (
     IngredientSerializer,
     TagSerializer,
-    RecipeSerializer,
     RecipeListSerializer,
     RecipeCreateUpdateSerializer,
     RecipeIngredient,
-    DownloadShoppingCartSerializer
+    DownloadShoppingCartSerializer,
+    FavoriteShoppingListSerializer
 )
+from api.paginations import Paginator
 from api.permissions import IsAuthorOrReadOnly
 from recipes.models import (
     Ingredient,
@@ -29,7 +35,6 @@ from recipes.models import (
     ShoppingList,
     Favorite
 )
-from recipes.paginations import Paginator
 
 
 class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -37,14 +42,8 @@ class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = None
-
-    def get_queryset(self):
-        name_query = self.request.query_params.get('name', None)
-        if name_query:
-            queryset = Ingredient.objects.filter(name__icontains=name_query)
-        else:
-            queryset = Ingredient.objects.all()
-        return queryset
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = IngredientFilter
 
 
 class TagsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -54,49 +53,17 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-def get_recipe_object_or_404(**kwargs):
-    return get_object_or_404(Recipe, id=kwargs['pk'])
-
-
 class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
     pagination_class = Paginator
-
-    def get_queryset(self):
-        is_favorited = self.request.query_params.get('is_favorited', None)
-        is_in_shopping_cart = self.request.query_params.get(
-            'is_in_shopping_cart', None)
-        author_id = self.request.query_params.get('author', None)
-        tags = self.request.query_params.getlist('tags', None)
-        queryset = Recipe.objects.all()
-        if self.request.user.is_authenticated:
-            if is_favorited:
-                queryset = queryset.filter(favorites__user=self.request.user)
-            if is_in_shopping_cart:
-                queryset = queryset.filter(
-                    shopping_lists__user=self.request.user)
-            if author_id:
-                queryset = queryset.filter(author=author_id)
-            if tags:
-                queryset = queryset.filter(tags__slug__in=tags)
-        return queryset.distinct()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = RecipeFilter
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
         return RecipeListSerializer
-
-    def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(
-            instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,), pagination_class=None)
@@ -105,7 +72,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if not recipe:
             return Response({'errors': 'Рецепт не найден'},
                             status=status.HTTP_400_BAD_REQUEST)
-        serializer = RecipeSerializer(recipe, context={'request': request})
+        serializer = FavoriteShoppingListSerializer(
+            recipe, context={'request': request})
         if not ShoppingList.objects.filter(user=request.user,
                                            recipe=recipe).exists():
             ShoppingList.objects.create(user=request.user, recipe=recipe)
@@ -115,7 +83,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, **kwargs):
-        recipe = get_recipe_object_or_404(**kwargs)
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         try:
             shopping_cart = ShoppingList.objects.get(
                 user=request.user, recipe=recipe)
@@ -169,7 +137,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if not recipe:
             return Response({'errors': 'Рецепт не найден'},
                             status=status.HTTP_400_BAD_REQUEST)
-        serializer = RecipeSerializer(recipe, context={'request': request})
+        serializer = FavoriteShoppingListSerializer(
+            recipe, context={'request': request})
         if not Favorite.objects.filter(user=request.user,
                                        recipe=recipe).exists():
             Favorite.objects.create(user=request.user, recipe=recipe)
@@ -179,7 +148,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @favorite.mapping.delete
     def delete_favorite(self, request, **kwargs):
-        recipe = get_recipe_object_or_404(**kwargs)
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         try:
             favorite = Favorite.objects.get(user=request.user, recipe=recipe)
             favorite.delete()
