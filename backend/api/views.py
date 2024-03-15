@@ -60,10 +60,16 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = RecipeFilter
 
+    def get_queryset(self):
+        return super().get_queryset().filter(is_draft=False)
+
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
         return RecipeListSerializer
+
+    def get_serializer_context(self):
+        return {'request': self.request}
 
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,), pagination_class=None)

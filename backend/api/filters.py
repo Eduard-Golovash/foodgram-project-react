@@ -10,7 +10,7 @@ class IngredientFilter(FilterSet):
     name = filters.CharFilter(lookup_expr='icontains')
 
 
-class RecipeFilter(FilterSet):
+class RecipeFilter(filters.FilterSet):
     is_favorited = filters.BooleanFilter(
         field_name='favorites__user', method='filter_is_favorited')
     is_in_shopping_cart = filters.BooleanFilter(
@@ -35,3 +35,7 @@ class RecipeFilter(FilterSet):
     def filter_tags(self, queryset, name, value):
         tags = value.split(',')
         return queryset.filter(tags__slug__in=tags)
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
