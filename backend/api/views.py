@@ -24,7 +24,8 @@ from api.serializers import (
     RecipeCreateUpdateSerializer,
     RecipeIngredient,
     DownloadShoppingCartSerializer,
-    FavoriteShoppingListSerializer
+    ShoppingListRecipeSerializer,
+    FavoriteRecipeSerializer
 )
 from api.paginations import Paginator
 from api.permissions import IsAuthorOrReadOnly
@@ -66,6 +67,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
+        elif self.action == 'shopping_cart':
+            return ShoppingListRecipeSerializer
+        elif self.action == 'favorite':
+            return FavoriteRecipeSerializer
         return RecipeListSerializer
 
     @staticmethod
@@ -89,7 +94,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if not recipe:
             return Response({'errors': 'Рецепт не найден'},
                             status=status.HTTP_400_BAD_REQUEST)
-        serializer = FavoriteShoppingListSerializer(
+        serializer = ShoppingListRecipeSerializer(
             recipe, context={'request': request})
         result = self.add_to_list(request.user, recipe, ShoppingList)
         if result:
@@ -150,7 +155,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if not recipe:
             return Response({'errors': 'Рецепт не найден'},
                             status=status.HTTP_400_BAD_REQUEST)
-        serializer = FavoriteShoppingListSerializer(
+        serializer = FavoriteRecipeSerializer(
             recipe, context={'request': request})
         result = self.add_to_list(request.user, recipe, Favorite)
         if result:
