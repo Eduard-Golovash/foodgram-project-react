@@ -59,8 +59,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
     pagination_class = Paginator
-    filter_backends = [DjangoFilterBackend]
-    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = RecipeFilter
     ordering_fields = ['-id']
 
