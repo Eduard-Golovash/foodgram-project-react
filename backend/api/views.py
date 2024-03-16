@@ -73,19 +73,19 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return RecipeCreateUpdateSerializer
         return RecipeListSerializer
 
-    @staticmethod
-    def add_to_list(user, recipe, list_model):
-        if not list_model.objects.filter(user=user, recipe=recipe).exists():
-            return list_model.objects.create(user=user, recipe=recipe)
-        return None
+    # @staticmethod
+    # def add_to_list(user, recipe, list_model):
+    #     if not list_model.objects.filter(user=user, recipe=recipe).exists():
+    #         return list_model.objects.create(user=user, recipe=recipe)
+    #     return None
 
-    @staticmethod
-    def remove_from_list(user, recipe, list_model):
-        obj = list_model.objects.filter(user=user, recipe=recipe).first()
-        if obj:
-            obj.delete()
-            return True
-        return False
+    # @staticmethod
+    # def remove_from_list(user, recipe, list_model):
+    #     obj = list_model.objects.filter(user=user, recipe=recipe).first()
+    #     if obj:
+    #         obj.delete()
+    #         return True
+    #     return False
 
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,), pagination_class=None)
@@ -96,8 +96,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         serializer = ShoppingListRecipeSerializer(
             recipe, context={'request': request})
-        result = self.add_to_list(request.user, recipe, ShoppingList)
-        if result:
+        if not ShoppingList.objects.filter(user=request.user,
+                                           recipe=recipe).exists():
+            ShoppingList.objects.create(user=request.user, recipe=recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'errors': 'Рецепт уже есть в списке покупок'},
                         status=status.HTTP_400_BAD_REQUEST)
@@ -105,14 +106,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-        success = self.remove_from_list(request.user, recipe, ShoppingList)
-        if success:
+        try:
+            shopping_cart = ShoppingList.objects.get(
+                user=request.user, recipe=recipe)
+            shopping_cart.delete()
             return Response(
                 {'detail': 'Рецепт успешно удален из списка покупок'},
                 status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {'errors': 'Рецепт не найден в списке покупок'},
-            status=status.HTTP_400_BAD_REQUEST)
+        except ShoppingList.DoesNotExist:
+            return Response(
+                {'errors': 'Рецепт не найден в списке покупок'},
+                status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,))
@@ -157,8 +161,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         serializer = FavoriteRecipeSerializer(
             recipe, context={'request': request})
-        result = self.add_to_list(request.user, recipe, Favorite)
-        if result:
+        if not Favorite.objects.filter(user=request.user,
+                                       recipe=recipe).exists():
+            Favorite.objects.create(user=request.user, recipe=recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'errors': 'Рецепт уже есть в избранном'},
                         status=status.HTTP_400_BAD_REQUEST)
@@ -166,9 +171,11 @@ class RecipesViewSet(viewsets.ModelViewSet):
     @favorite.mapping.delete
     def delete_favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-        success = self.remove_from_list(request.user, recipe, Favorite)
-        if success:
+        try:
+            favorite = Favorite.objects.get(user=request.user, recipe=recipe)
+            favorite.delete()
             return Response({'detail': 'Рецепт успешно удален из избранного'},
                             status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': 'Рецепт не найден в избранном'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        except Favorite.DoesNotExist:
+            return Response({'errors': 'Рецепт не найден в избранном'},
+                            status=status.HTTP_400_BAD_REQUEST)
