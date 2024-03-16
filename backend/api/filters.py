@@ -10,7 +10,7 @@ class IngredientFilter(FilterSet):
     name = filters.CharFilter(lookup_expr='icontains')
 
 
-class RecipeFilter(filters.FilterSet):
+class RecipeFilter(FilterSet):
     is_favorited = filters.BooleanFilter(
         field_name='favorites__user', method='filter_is_favorited')
     is_in_shopping_cart = filters.BooleanFilter(
