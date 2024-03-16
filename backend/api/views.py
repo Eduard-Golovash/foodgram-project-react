@@ -61,6 +61,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilter
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == 'list':
+            queryset = queryset.filter(favorites__user=self.request.user)
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
