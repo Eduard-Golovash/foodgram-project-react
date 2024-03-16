@@ -216,6 +216,16 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return RecipeListSerializer(instance, context=self.context).data
 
 
+class RecipeSerializer(serializers.ModelSerializer):
+    name = serializers.ReadOnlyField()
+    image = Base64ImageField(read_only=True)
+    cooking_time = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
 class DownloadShoppingCartSerializer(serializers.Serializer):
     ingredient_name = serializers.CharField(source='ingredient__name')
     total_amount = serializers.IntegerField()
@@ -293,6 +303,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
+
 
 class ShoppingListRecipeSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField()
