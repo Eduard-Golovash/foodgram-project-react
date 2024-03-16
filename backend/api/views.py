@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import filters
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly
@@ -59,26 +60,20 @@ class RecipesViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
     pagination_class = Paginator
     filter_backends = [DjangoFilterBackend]
+    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
     filterset_class = RecipeFilter
+    ordering_fields = ['publish_date']
 
-    # def get_queryset(self):
-    #     is_favorited = self.request.query_params.get('is_favorited', None)
-    #     is_in_shopping_cart = self.request.query_params.get(
-    #         'is_in_shopping_cart', None)
-    #     author_id = self.request.query_params.get('author', None)
-    #     tags = self.request.query_params.getlist('tags', None)
-    #     queryset = Recipe.objects.all()
-    #     if self.request.user.is_authenticated:
-    #         if is_favorited:
-    #             queryset = queryset.filter(favorite__user=self.request.user)
-    #         if is_in_shopping_cart:
-    #             queryset = queryset.filter(
-    #                 shoppinglist__user=self.request.user)
-    #         if author_id:
-    #             queryset = queryset.filter(author=author_id)
-    #         if tags:
-    #             queryset = queryset.filter(tags__slug__in=tags)
-    #     return queryset.distinct()
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.is_authenticated:
+            if self.request.query_params.get('is_favorited'):
+                queryset = queryset.filter(
+                    favorite__user=self.request.user)
+            if self.request.query_params.get('is_in_shopping_cart'):
+                queryset = queryset.filter(
+                    shoppinglist__user=self.request.user)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
