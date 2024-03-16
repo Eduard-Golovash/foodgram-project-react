@@ -61,7 +61,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     pagination_class = Paginator
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = RecipeFilter
-    ordering_fields = ['-id']
+    ordering_fields = ['id']
 
     def get_queryset(self):
         queryset = super().get_queryset()
