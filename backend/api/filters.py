@@ -9,6 +9,7 @@ class IngredientFilter(FilterSet):
         model = Ingredient
         fields = ['name']
 
+
 class RecipeFilter(FilterSet):
     tags = filters.ModelMultipleChoiceFilter(
         field_name='tags__slug',
@@ -17,7 +18,8 @@ class RecipeFilter(FilterSet):
     )
 
     is_favorited = filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(method='filter_is_in_shopping_cart')
+    is_in_shopping_cart = filters.BooleanFilter(
+        method='filter_is_in_shopping_cart')
 
     class Meta:
         model = Recipe
