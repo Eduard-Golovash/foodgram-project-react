@@ -63,7 +63,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        if self.action == 'favorites':
+        is_favorites_request = self.request.query_params.get('is_favorited', False)
+        if is_favorites_request and self.request.user.is_authenticated:
             queryset = queryset.filter(favorites__user=self.request.user)
         return queryset
 
