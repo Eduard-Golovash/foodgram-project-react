@@ -61,6 +61,33 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilter
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        is_favorited = self.request.query_params.get(
+            'is_favorited', None)
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart', None)
+        author_id = self.request.query_params.get(
+            'author', None)
+        tags = self.request.query_params.getlist(
+            'tags', None)
+
+        if self.request.user.is_authenticated:
+            if is_favorited:
+                queryset = queryset.filter(
+                    favorites__user=self.request.user)
+            if is_in_shopping_cart:
+                queryset = queryset.filter(
+                    shopping_lists__user=self.request.user)
+            if author_id:
+                queryset = queryset.filter(
+                    author=author_id)
+            if tags:
+                queryset = queryset.filter(
+                    tags__slug__in=tags)
+
+        return queryset.distinct()
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
