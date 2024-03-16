@@ -2,7 +2,6 @@ from django_filters import FilterSet, filters
 from recipes.models import (
     Recipe,
     Ingredient,
-    Tag
 )
 
 
