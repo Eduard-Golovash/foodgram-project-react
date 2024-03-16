@@ -14,14 +14,14 @@ class IngredientFilter(FilterSet):
 
 
 class RecipeFilter(FilterSet):
-    is_favorited = filters.BooleanFilter(
-        method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(
-        method='filter_is_in_shopping_cart')
+    is_favorited = filters.BooleanFilter(method='filter_is_favorited')
+    is_in_shopping_cart = filters.BooleanFilter(method='filter_is_in_shopping_cart')
+    author = filters.NumberFilter(field_name='author_id')
+    tags = filters.CharFilter(method='filter_by_tags')
 
     class Meta:
         model = Recipe
-        fields = ['is_favorited', 'is_in_shopping_cart', 'tags', 'author']
+        fields = ['is_favorited', 'is_in_shopping_cart', 'author', 'tags']
 
     def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
@@ -34,3 +34,7 @@ class RecipeFilter(FilterSet):
         if value and user.is_authenticated:
             return queryset.filter(shoppinglist__user=user)
         return queryset
+
+    def filter_by_tags(self, queryset, name, value):
+        tags = value.split(',')
+        return queryset.filter(tags__slug__in=tags)
