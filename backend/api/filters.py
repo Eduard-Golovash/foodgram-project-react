@@ -42,13 +42,14 @@ class RecipeFilter(FilterSet):
         if self.request and self.request.user.is_authenticated:
             if self.request.method == 'GET':
                 if 'is_favorited' in self.request.query_params:
-                    if self.request.query_params.get(
-                        'is_favorited') == 'true':
+                    if self.request.query_params.get('is_favorited') == 'true':
                         queryset = queryset.filter(
                             favorites__user=self.request.user)
                 if 'is_in_shopping_cart' in self.request.query_params:
-                    if self.request.query_params.get(
-                        'is_in_shopping_cart') == 'true':
+                    if (
+                        self.request.query_params.get(
+                            'is_in_shopping_cart') == 'true'
+                    ):
                         queryset = queryset.filter(
                             shopping_cart__user=self.request.user)
         return queryset
