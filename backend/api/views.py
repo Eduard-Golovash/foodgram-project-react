@@ -64,10 +64,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    def get_serializer_class(self): 
-        if self.action in ['create', 'update', 'partial_update']: 
-            return RecipeCreateUpdateSerializer 
-        return RecipeListSerializer 
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return RecipeCreateUpdateSerializer
+        return RecipeListSerializer
 
     @staticmethod
     def add_to_list(user, recipe, list_model):
