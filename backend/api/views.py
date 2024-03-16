@@ -73,7 +73,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(favorite__user=self.request.user)
             if is_in_shopping_cart:
                 queryset = queryset.filter(
-                    shopping_list__user=self.request.user)
+                    shoppinglist__user=self.request.user)
             if author_id:
                 queryset = queryset.filter(author=author_id)
             if tags:
