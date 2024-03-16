@@ -62,7 +62,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
     filterset_class = RecipeFilter
-    ordering_fields = ['publish_date']
+    ordering_fields = ['-publish_date']
 
     def get_queryset(self):
         queryset = super().get_queryset()
