@@ -24,9 +24,8 @@ from api.serializers import (
     RecipeCreateUpdateSerializer,
     RecipeIngredient,
     DownloadShoppingCartSerializer,
-    # ShoppingListRecipeSerializer,
-    # FavoriteRecipeSerializer,
-    RecipeSerializer
+    ShoppingListRecipeSerializer,
+    FavoriteRecipeSerializer,
 )
 from api.paginations import Paginator
 from api.permissions import IsAuthorOrReadOnly
@@ -71,10 +70,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
         queryset = Recipe.objects.all()
         if self.request.user.is_authenticated:
             if is_favorited:
-                queryset = queryset.filter(favorites__user=self.request.user)
+                queryset = queryset.filter(favorite__user=self.request.user)
             if is_in_shopping_cart:
                 queryset = queryset.filter(
-                    shopping_lists__user=self.request.user)
+                    shopping_list__user=self.request.user)
             if author_id:
                 queryset = queryset.filter(author=author_id)
             if tags:
@@ -110,7 +109,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if not recipe:
             return Response({'errors': 'Рецепт не найден'},
                             status=status.HTTP_400_BAD_REQUEST)
-        serializer = RecipeSerializer(
+        serializer = ShoppingListRecipeSerializer(
             recipe, context={'request': request})
         if not ShoppingList.objects.filter(user=request.user,
                                            recipe=recipe).exists():
@@ -175,7 +174,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if not recipe:
             return Response({'errors': 'Рецепт не найден'},
                             status=status.HTTP_400_BAD_REQUEST)
-        serializer = RecipeSerializer(
+        serializer = FavoriteRecipeSerializer(
             recipe, context={'request': request})
         if not Favorite.objects.filter(user=request.user,
                                        recipe=recipe).exists():
