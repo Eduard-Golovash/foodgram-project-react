@@ -47,6 +47,14 @@ class UserCreateSerializer(UserCreateSerializer):
         fields = ('id', 'email', 'username',
                   'first_name', 'last_name', 'password')
 
+    def validate(self, data):
+        if 'first_name' not in data or 'last_name' not in data:
+            raise serializers.ValidationError(
+                {'error': 'Поля "first_name" и "last_name"'
+                 'обязательны для регистрации пользователя'}
+            )
+        return data
+
     def validate_username(self, value):
         pattern = r'^[\w.@+-]+$'
         if not re.match(pattern, value):

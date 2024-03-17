@@ -28,11 +28,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserCreateSerializer
 
     def create(self, request, *args, **kwargs):
-        if 'first_name' not in request.data or 'last_name' not in request.data:
-            return Response(
-                {'error': 'Поля "first_name" и "last_name"'
-                 'обязательны для регистрации пользователя'},
-                status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data,
                                          context={'request': request})
         serializer.is_valid(raise_exception=True)
