@@ -77,28 +77,14 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if request.method == 'POST':
             serializer = SubscriptionActionSerializer(
-                data={'author': author}, context={'request': request})
+                author, data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
-            subscription, created = Subscription.objects.get_or_create(
-                user=request.user, author=author)
-            if not created:
-                return Response(
-                    {'error': 'Вы уже подписаны на этого пользователя',
-                     'is_subscribed': True},
-                    status=status.HTTP_400_BAD_REQUEST)
-            response_data = serializer.data
-            response_data['message'] = 'Подписка успешно создана'
-            return Response(response_data, status=status.HTTP_201_CREATED)
+            Subscription.objects.create(user=request.user, author=author)
+            return Response(serializer.data,
+                            status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            subscription = Subscription.objects.filter(
-                user=request.user, author=author).first()
-            if not subscription:
-                return Response(
-                    {'errors': 'Подписка не существует',
-                     'is_subscribed': False},
-                    status=status.HTTP_400_BAD_REQUEST)
-            subscription.delete()
-            response_data = {'message': 'Подписка успешно удалена',
-                             'is_subscribed': False}
-            return Response(response_data, status=status.HTTP_204_NO_CONTENT)
+            get_object_or_404(Subscription, user=request.user,
+                              author=author).delete()
+            return Response({'detail': 'Подписка успешно удалена'},
+                            status=status.HTTP_204_NO_CONTENT)
