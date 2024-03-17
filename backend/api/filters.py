@@ -29,7 +29,10 @@ class RecipeFilter(FilterSet):
 
     def filter_by_tags(self, queryset, name, value):
         tags = value.split(',')
-        return queryset.filter(tags__slug__in=tags)
+        if tags:
+            return queryset.filter(tags__slug__in=tags)
+        else:
+            return queryset
 
     def filter_is_favorited(self, queryset, name, value):
         if value:
