@@ -65,11 +65,10 @@ class UserViewSet(viewsets.ModelViewSet):
             pagination_class=Paginator)
     def subscriptions(self, request):
         queryset = User.objects.filter(subscription_author__user=request.user)
-        for user in queryset:
-            user.is_subscribed = True
-        serializer = SubscriptionSerializer(
-            queryset, many=True, context={'request': request})
-        return Response(serializer.data)
+        page = self.paginate_queryset(queryset)
+        serializer = SubscriptionSerializer(page, many=True,
+                                            context={'request': request})
+        return self.get_paginated_response(serializer.data)
 
     # @action(detail=True, methods=['post'],
     #         permission_classes=(IsAuthenticated,))
@@ -132,4 +131,6 @@ class UserViewSet(viewsets.ModelViewSet):
             author, context={'request': request})
         data = serializer.data
         data['is_subscribed'] = False
-        return Response(data, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            data, status=status.HTTP_201_CREATED
+            if request.method == 'POST' else status.HTTP_204_NO_CONTENT)
