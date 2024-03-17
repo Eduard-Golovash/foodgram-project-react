@@ -102,20 +102,16 @@ class UserViewSet(viewsets.ModelViewSet):
     #     data = serializer.data
     #     data['is_subscribed'] = False
     #     return Response(data, status=status.HTTP_204_NO_CONTENT)
-
-
     @action(detail=True, methods=['post'],
             permission_classes=[IsAuthenticated])
     def subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
         subscription, created = Subscription.objects.get_or_create(
             user=request.user, author=author)
-        
         if not created:
             return Response(
                 {'error': 'Вы уже подписаны на этого пользователя'},
                 status=status.HTTP_400_BAD_REQUEST)
-        
         serializer = SubscriptionActionSerializer(
             author, context={'request': request})
         data = serializer.data
