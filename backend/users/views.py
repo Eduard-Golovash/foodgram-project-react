@@ -83,6 +83,10 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': 'Вы уже подписаны на этого пользователя'},
                 status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'message': 'Подписка успешно создана'},
+            status=status.HTTP_201_CREATED
+        )
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, **kwargs):
