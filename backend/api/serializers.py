@@ -294,13 +294,10 @@ class SubscriptionActionSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            author_id = self.context.get('author_id')
-            if author_id:
-                return Subscription.objects.filter(
-                    user=request.user, author_id=author_id
-                ).exists()
-        return False
+        return (
+            request and request.user.is_authenticated
+            and obj.subscribers.filter(user=request.user).exists()
+        )
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
