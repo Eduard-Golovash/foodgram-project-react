@@ -96,7 +96,5 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = SubscriptionActionSerializer(
             author, context={'request': request})
         data = serializer.data
-        data['is_subscribed'] = request.method == 'POST'
-        return Response(
-            data, status=status.HTTP_201_CREATED
-            if request.method == 'POST' else status.HTTP_204_NO_CONTENT)
+        data['is_subscribed'] = False
+        return Response(data, status=status.HTTP_204_NO_CONTENT)
