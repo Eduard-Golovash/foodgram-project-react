@@ -14,7 +14,7 @@ from recipes.models import (
     Favorite,
     RecipeIngredient,
 )
-from users.models import User, Subscription
+from users.models import User
 
 
 class UserSerializer(UserSerializer):
