@@ -14,7 +14,7 @@ from recipes.models import (
     Favorite,
     RecipeIngredient,
 )
-from users.models import User
+from users.models import User, Subscription
 
 
 class UserSerializer(UserSerializer):
@@ -252,11 +252,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                   'is_subscribed', 'recipes', 'recipes_count')
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            subscribed = obj.subscribers.filter(user=request.user).exists()
-            return subscribed
-        return False
+        return (
+            self.context.get('request').user.is_authenticated
+            and Subscription.objects.filter(user=self.context['request'].user,
+                                            author=obj).exists()
+        )
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -264,9 +264,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         limit = request.GET.get('recipes_limit')
-        recipes = (
-            obj.recipes.all()[:int(limit)] if limit else obj.recipes.all()
-        )
+        recipes = obj.recipes.all()
+        if limit:
+            recipes = recipes[:int(limit)]
         serializer = RecipeSerializer(recipes, many=True, read_only=True)
         return serializer.data
 
@@ -284,17 +284,16 @@ class SubscriptionActionSerializer(serializers.ModelSerializer):
                   'is_subscribed', 'recipes', 'recipes_count')
 
     def validate(self, obj):
-        request = self.context.get('request')
-        if request and (request.user == obj):
+        if (self.context['request'].user == obj):
             raise serializers.ValidationError(
-                {'errors': 'Вы не можете подписаться на себя.'})
+                {'errors': 'Вы не можете подписаться на себя'})
         return obj
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
         return (
-            request and request.user.is_authenticated
-            and obj.subscribers.filter(user=request.user).exists()
+            self.context.get('request').user.is_authenticated
+            and Subscription.objects.filter(user=self.context['request'].user,
+                                            author=obj).exists()
         )
 
     def get_recipes_count(self, obj):
