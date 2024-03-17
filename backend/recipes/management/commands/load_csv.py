@@ -1,6 +1,7 @@
 import os
 import csv
 from django.core.management.base import BaseCommand
+from django.conf import settings
 from recipes.models import Ingredient
 
 
@@ -10,7 +11,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         script_path = os.path.dirname(os.path.abspath(__file__))
         csv_file_path = os.path.join(
-            script_path, '..', '..', 'fixtures', 'ingredients.csv')
+            settings.BASE_DIR, 'fixtures', 'ingredients.csv')
 
         with open(csv_file_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.reader(csvfile)
