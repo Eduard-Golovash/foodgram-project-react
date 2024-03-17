@@ -20,19 +20,19 @@ class RecipeFilter(FilterSet):
         method='filter_is_in_shopping_cart')
     author = filters.NumberFilter(
         field_name='author_id')
-    tags = filters.CharFilter(
-        method='filter_by_tags')
+    # tags = filters.CharFilter(
+    #     method='filter_by_tags')
 
     class Meta:
         model = Recipe
-        fields = ['is_favorited', 'is_in_shopping_cart', 'author', 'tags']
+        fields = ['is_favorited', 'is_in_shopping_cart', 'author']
 
-    def filter_by_tags(self, queryset, name, value):
-        tags = value.split(',')
-        if tags:
-            return queryset.filter(tags__slug__in=tags)
-        else:
-            return queryset
+    # def filter_by_tags(self, queryset, name, value):
+    #     tags = value.split(',')
+    #     if tags:
+    #         return queryset.filter(tags__slug__in=tags)
+    #     else:
+    #         return queryset
 
     def filter_is_favorited(self, queryset, name, value):
         if value:
