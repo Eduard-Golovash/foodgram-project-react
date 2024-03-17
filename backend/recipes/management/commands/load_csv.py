@@ -9,7 +9,6 @@ class Command(BaseCommand):
     help = 'Load data from CSV file'
 
     def handle(self, *args, **options):
-        script_path = os.path.dirname(os.path.abspath(__file__))
         csv_file_path = os.path.join(
             settings.BASE_DIR, 'fixtures', 'ingredients.csv')
 
