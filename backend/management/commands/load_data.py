@@ -1,20 +1,20 @@
 import os
-import csv
+import json
 from django.core.management.base import BaseCommand
 from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
-    help = 'Load data from CSV file'
+    help = 'Загрузка данных из файла JSON'
 
     def handle(self, *args, **options):
-        script_path = os.path.dirname(os.path.abspath(__file__))
-        csv_file_path = os.path.join(
-            script_path, '..', '..', 'fixtures', 'ingredients.csv')
-        with open(csv_file_path, 'r', encoding='utf-8') as csvfile:
-            reader = csv.reader(csvfile)
-            for row in reader:
-                name, measurement_unit = row
+        json_file_path = os.path.join(os.path.dirname(os.path.abspath(
+            __file__)), '..', '..', 'fixtures', 'ingredients.json')
+        with open(json_file_path, 'r', encoding='utf-8') as jsonfile:
+            data = json.load(jsonfile)
+            for item in data:
                 Ingredient.objects.create(
-                    name=name, measurement_unit=measurement_unit)
-        self.stdout.write(self.style.SUCCESS("Data loaded successfully."))
+                    name=item['name'],
+                    measurement_unit=item['measurement_unit'])
+        self.stdout.write(
+            self.style.SUCCESS("Данные успешно загружены"))
