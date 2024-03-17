@@ -84,10 +84,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 {'error': 'Вы уже подписаны на этого пользователя',
                  'is_subscribed': True},
                 status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            {'message': 'Подписка успешно создана', 'is_subscribed': True},
-            status=status.HTTP_201_CREATED
-        )
+        response_data = serializer.data
+        response_data['message'] = 'Подписка успешно создана'
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, **kwargs):
@@ -99,6 +98,6 @@ class UserViewSet(viewsets.ModelViewSet):
                              'is_subscribed': False},
                             status=status.HTTP_400_BAD_REQUEST)
         subscription.delete()
-        return Response({'message': 'Подписка успешно удалена',
-                         'is_subscribed': False},
-                        status=status.HTTP_204_NO_CONTENT)
+        response_data = {'message': 'Подписка успешно удалена',
+                         'is_subscribed': False}
+        return Response(response_data, status=status.HTTP_204_NO_CONTENT)
