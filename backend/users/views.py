@@ -64,48 +64,37 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated,),
             pagination_class=Paginator)
     def subscriptions(self, request):
-        subscriptions = Subscription.objects.filter(user=request.user)
-        author_ids = subscriptions.values_list('author_id', flat=True)
-        queryset = User.objects.all()
-        for user in queryset:
-            user.is_subscribed = user.id in author_ids
-        serializer = SubscriptionSerializer(
-            queryset, many=True, context={'request': request})
-        return Response(
-            {'users': serializer.data,
-             'subscribed_authors': list(author_ids)}
-        )
+        queryset = User.objects.filter(subscription_author__user=request.user)
+        page = self.paginate_queryset(queryset)
+        serializer = SubscriptionSerializer(page, many=True,
+                                            context={'request': request})
+        return self.get_paginated_response(serializer.data)
+
+    @staticmethod
+    def add_to_list(model, user, author):
+        if model.objects.filter(user=user, author=author).exists():
+            return Response({'error': 'Вы уже подписаны на этого пользователя'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        model.objects.create(user=user, author=author)
+        return Response({'message': 'Подписка успешно создана'},
+                        status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def remove_from_list(model, user, author):
+        obj = model.objects.filter(user=user, author=author)
+        if obj.exists():
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'errors': 'Подписка не существует'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,))
     def subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
-        serializer = SubscriptionActionSerializer(
-            data={'author': author}, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        subscription, created = Subscription.objects.get_or_create(
-            user=request.user, author=author)
-        if not created:
-            return Response(
-                {'error': 'Вы уже подписаны на этого пользователя'},
-                status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            {'message': 'Подписка успешно создана'},
-            status=status.HTTP_201_CREATED
-        )
+        return self.add_to_list(Subscription, request.user, author)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, **kwargs):
         author = get_object_or_404(User, id=kwargs['pk'])
-        subscription = Subscription.objects.filter(
-            user=request.user, author=author).first()
-        if not subscription:
-            return Response({'errors': 'Подписка не существует'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        subscription.delete()
-        serializer = SubscriptionActionSerializer(
-            author, context={'request': request})
-        data = serializer.data
-        return Response(
-            data, status=status.HTTP_201_CREATED
-            if request.method == 'POST' else status.HTTP_204_NO_CONTENT)
+        return self.remove_from_list(Subscription, request.user, author)
