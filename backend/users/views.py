@@ -99,8 +99,6 @@ class UserViewSet(viewsets.ModelViewSet):
                              'is_subscribed': False},
                             status=status.HTTP_400_BAD_REQUEST)
         subscription.delete()
-        serializer = SubscriptionActionSerializer(
-            author, context={'request': request})
-        data = serializer.data
-        data['is_subscribed'] = False
-        return Response(data, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Подписка успешно удалена',
+                         'is_subscribed': False},
+                        status=status.HTTP_204_NO_CONTENT)
