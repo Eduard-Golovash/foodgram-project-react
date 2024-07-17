@@ -33,12 +33,15 @@
 ##### POSTGRES_DB=django
 ##### DB_HOST=db
 ##### DB_PORT=5432
-##### 4. Создаем образы и запускаем контейнеры из директории infra/: docker-compose up -d build
+##### SECRET_KEY='секретный ключ Django'
+##### * Сгенерировать новый SECRET KEY можно с помощью команды python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+##### 4. Создаем образы и запускаем контейнеры из директории infra/: docker-compose up --build -d
 ##### 5. Проверяем, что контейнеры запустились: docker ps
 ##### 6. Делаем миграции: docker-compose exec backend python manage.py migrate
 ##### 7. Собираем статику: docker-compose exec backend python manage.py collectstatic
 ##### 8. Создаем суперюзера: docker-compose exec backend python manage.py createsuperuser
 ##### 9. Добавляем теги для рецептов через админ-панель проекта http://localhost/admin/, так как это поле является обязательным для сохранения рецепта и добавляется только админом.
+##### Теперь проект доступен по адресу http://localhost/, админка по адресу http://localhost/admin/ и документация по адресу http://localhost/api/docs/ 
 
 #### Инструкция для разворачивания проекта на удаленном сервере:
 
